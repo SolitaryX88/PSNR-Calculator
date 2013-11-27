@@ -73,6 +73,12 @@ void calc_size(int height, int width, char* yuv_sub) {
 		buf_size = (int) Y_size * 1.5;
 		return;
 	}
+	
+	if (strcmp(yuv_sub, "422") == 0) {
+		C_size = height * (width/2);
+		buf_size = (int) Y_size * 2;
+		return;
+	}
 
 	if (strcmp(yuv_sub, "444") == 0) {
 		C_size = Y_size;
