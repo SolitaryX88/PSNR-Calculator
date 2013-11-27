@@ -1,6 +1,8 @@
 PSNR Calculator
 =============== 
 
+This tool written in C can calculate the PSNR in each luma or chroma of a YUV video sequence in almost all formats.
+
 Compile with: 
 
 	$ gcc psnr_calc.c -lm -o psnr_calc
