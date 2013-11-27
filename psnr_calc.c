@@ -93,16 +93,15 @@ void calc_size(int height, int width, char* yuv_sub) {
 
 float psnr(u8_t* orig_buff, u8_t* eval_buff, int size) {
 
-	unsigned long long err = 0;
-	int i, diff = 0;
-
-	for (i = 0; i < size; i++) {
-
-		diff = (int) orig_buff[i] - eval_buff[i];
-		err += diff * diff;
-	}
-
-	return ((float) 20.0 * log(255.0 / (sqrt(err / size))) / log(10.0));
+      double err = 0;   
+      int i;  
+      
+      for (i = 0; i < size; i++) {  
+        int diff = (int) orig_buff[i] - (int) eval_buff[i];  
+        err += diff * diff;  
+      }  
+        
+      return (20.0 * log(255.0 / sqrt(err / size)) / log(10.0));
 }
 
 int main(int argc, char* argv[]) {
@@ -145,7 +144,7 @@ int main(int argc, char* argv[]) {
 		u = psnr(orig + Y_size, eval + Y_size, C_size);
 		v = psnr(orig + Y_size + C_size, eval + Y_size + C_size, C_size);
 
-		fprintf(stdout, "%.3f \t\t %.3f \t\t %.3f \t %.3f\n", (y + u + v) / 3,
+		fprintf(stdout, "%.3f \t\t %.3f \t %.3f \t %.3f\n", (y + u + v) / 3,
 				y, u, v);
 
 		y_avr += y;
@@ -157,9 +156,8 @@ int main(int argc, char* argv[]) {
 	fprintf(stdout, "\n\n \t\t===== END OF CALCULATIONS====\n\n ");
 
 	fprintf(stdout, "Total N# of frames calculated: %d \n", frames);
-	fprintf(stdout,
-			"PSNR average values for Luma(Y): %.4f Blue-Luma(U): %.4f and Red-Luma(V): %.4f \n",
-			y_avr / frames, u_avr / frames, v_avr / frames);
+	fprintf(stdout, "PSNR average values for all: %.4f Luma(Y): %.4f Blue-Luma(U): %.4f and Red-Luma(V): %.4f \n",
+					(y_avr+u_avr+v_avr)/3/(frames),y_avr / frames, u_avr / frames, v_avr / frames);
 
 	close_f();
 	return 0;

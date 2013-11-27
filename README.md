@@ -15,7 +15,7 @@ Run with:
 ### Road Map
 
 * The StdOut is in text format but not necessery.
-* The YUV formats are 420, 422, 411 other formats are not supported.
+* The YUV formats are 444, 422, 420, 411 other formats are not supported.
 * The height and width only in pixels and not the format (CIF, 4CIF, QCIF, ..).
 
 
