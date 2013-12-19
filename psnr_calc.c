@@ -2,7 +2,7 @@
  * psnr_calc.c
  *
  *  Created on: Nov 26, 2013
- *      Author: solitaryx88
+ *      Author: Charlampos Mysirlidis
  */
 
 #include <stdio.h>
@@ -93,14 +93,14 @@ void calc_size(int height, int width, char* yuv_sub) {
 
 float psnr(u8_t* orig_buff, u8_t* eval_buff, int size) {
 
-      double err = 0;   
-      int i;  
-      
-      for (i = 0; i < size; i++) {  
-        int diff = (int) orig_buff[i] - (int) eval_buff[i];  
-        err += diff * diff;  
-      }  
-        
+      double err = 0;
+      int i;
+
+      for (i = 0; i < size; i++) {
+        int diff = (int) orig_buff[i] - (int) eval_buff[i];
+        err += diff * diff;
+      }
+
       return (20.0 * log(255.0 / sqrt(err / size)) / log(10.0));
 }
 
@@ -112,8 +112,7 @@ int main(int argc, char* argv[]) {
 
 	if (argc != 7) {
 		fprintf(stderr, "Wrong argument format!\n\n");
-		fprintf(stderr,
-				"Example: \n %s  original.yuv  eval.yuv  height width frames_num yuv_subsampling > stdout \n",
+		fprintf(stderr,	"Example: \n %s original.yuv eval.yuv width height frames_num yuv_subsampling > stdout \n",
 				argv[0]);
 		close_f();
 	}
@@ -121,16 +120,16 @@ int main(int argc, char* argv[]) {
 	orig_file = init_f(argv[1]);
 	eval_file = init_f(argv[2]);
 
-	height = init_res(argv[3]);
-	width = init_res(argv[4]);
+	width = init_res(argv[3]);
+	height = init_res(argv[4]);
 
 	calc_size(height, width, argv[6]);
 
 	orig = (u8_t *) malloc(buf_size);
 	eval = (u8_t *) malloc(buf_size);
-
+#ifdef DESC
 	fprintf(stdout, "Aver \t\t Y \t\t U \t\t V\n");
-
+#endif
 	for (frames = 0; frames < abs(atoi(argv[5])); frames++) {
 		if (fread(orig, buf_size, 1, orig_file) <= 0) {
 			break;
@@ -143,23 +142,27 @@ int main(int argc, char* argv[]) {
 		y = psnr(orig, eval, Y_size);
 		u = psnr(orig + Y_size, eval + Y_size, C_size);
 		v = psnr(orig + Y_size + C_size, eval + Y_size + C_size, C_size);
+#ifdef DESC
+		fprintf(stdout, "%.3f \t\t %.3f \t %.3f \t %.3f\n", (y + u + v) / 3, y, u, v);
+#else
+		fprintf(stdout, "%.3f\n", (y+u+v)/3);
+#endif
 
-		fprintf(stdout, "%.3f \t\t %.3f \t %.3f \t %.3f\n", (y + u + v) / 3,
-				y, u, v);
-
-		y_avr += y;
+                y_avr += y;
 		u_avr += u;
 		v_avr += v;
 
 	}
-
+#ifdef DESC
 	fprintf(stdout, "\n\n \t\t===== END OF CALCULATIONS====\n\n ");
 
 	fprintf(stdout, "Total N# of frames calculated: %d \n", frames);
 	fprintf(stdout, "PSNR average values for all: %.4f Luma(Y): %.4f Blue-Luma(U): %.4f and Red-Luma(V): %.4f \n",
 					(y_avr+u_avr+v_avr)/3/(frames),y_avr / frames, u_avr / frames, v_avr / frames);
+#endif
 
 	close_f();
 	return 0;
 
 }
+
