@@ -15,9 +15,7 @@ Run with:
 
 	$ psnr_calc original.yuv eval.yuv width height frames_num yuv_subsampling [mode] > stdout
 
-* Modes are:
-* ** average    # for the average PSNR value
-* ** per-frame  # for the per-frame PSNR values
+> **NOTE:** The *[modes]* are **average** and **per-frame**. The first one is for the average PSNR values and the second one only for the frame No#
 
 ### Road Map
 
@@ -26,6 +24,6 @@ Run with:
 * The height and width only in pixels and not the format (CIF, 4CIF, QCIF, ..).
 
 
-
+------
 ### Version 0.2
 
