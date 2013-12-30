@@ -13,8 +13,11 @@ Compile with(for full description):
 
 Run with: 
 
-	$ psnr_calc original.yuv eval.yuv width height frames_num yuv_subsampling > stdout
+	$ psnr_calc original.yuv eval.yuv width height frames_num yuv_subsampling [mode] > stdout
 
+* Modes are:
+* ** average    # for the average PSNR value
+* ** per-frame  # for the per-frame PSNR values
 
 ### Road Map
 
@@ -24,5 +27,5 @@ Run with:
 
 
 
-### Version 1
+### Version 0.2
 

@@ -1,8 +1,9 @@
 /*
- * psnr_calc.c
+ * psnr_aver.c
  *
- *  Created on: Nov 26, 2013
- *      Author: Charlampos Mysirlidis
+ *  Created on: Dec 19, 2013
+ *  Last edit : Dec 30, 2013
+ *      Author: Charalampos Mysirlidis
  */
 
 #include <stdio.h>
@@ -14,7 +15,7 @@ typedef unsigned char u8_t;
 
 u8_t *orig, *eval;
 FILE *orig_file, *eval_file;
-int frames;
+int frame_num;
 int buf_size, Y_size, C_size;
 
 void close_f() {
@@ -73,9 +74,9 @@ void calc_size(int height, int width, char* yuv_sub) {
 		buf_size = (int) Y_size * 1.5;
 		return;
 	}
-	
+
 	if (strcmp(yuv_sub, "422") == 0) {
-		C_size = height * (width/2);
+		C_size = height * (width / 2);
 		buf_size = (int) Y_size * 2;
 		return;
 	}
@@ -91,28 +92,43 @@ void calc_size(int height, int width, char* yuv_sub) {
 	close_f();
 }
 
-float psnr(u8_t* orig_buff, u8_t* eval_buff, int size) {
+double mse(u8_t* orig_buff, u8_t* eval_buff, int size) {
 
-      double err = 0;
-      int i;
+	double err = 0.0;
+	int i, diff;
 
-      for (i = 0; i < size; i++) {
-        int diff = (int) orig_buff[i] - (int) eval_buff[i];
-        err += diff * diff;
-      }
+	for (i = 0; i < size; i++) {
+		diff = (int) orig_buff[i] - eval_buff[i];
+		err += (diff * diff);
+	}
 
-      return (20.0 * log(255.0 / sqrt(err / size)) / log(10.0));
+#ifdef DEBUG
+	printf("MSE: %f\n", err/size);
+#endif
+
+	return (err / size);
+}
+
+double psnr(double mse_aver) {
+
+	return (10.0 * log10((255.0 * 255.0) / mse_aver));
 }
 
 int main(int argc, char* argv[]) {
 
-	int height, width;
-	float y, u, v;
-	float y_avr = 0.0, u_avr = 0.0, v_avr = 0.0;
+	int height, width, mode = 0;
 
-	if (argc != 7) {
+	double yuv_mse, mse_sum = 0.0;
+
+#ifdef DESC
+	double y_avr = 0.0, u_avr = 0.0, v_avr = 0.0;
+	double y_mse, u_mse, v_mse;
+#endif
+
+	if (argc != 8) {
 		fprintf(stderr, "Wrong argument format!\n\n");
-		fprintf(stderr,	"Example: \n %s original.yuv eval.yuv width height frames_num yuv_subsampling > stdout \n",
+		fprintf(stderr,
+				"Example: \n %s original.yuv eval.yuv width height frames_num yuv_subsampling <per-frame || average> > stdout \n",
 				argv[0]);
 		close_f();
 	}
@@ -125,12 +141,19 @@ int main(int argc, char* argv[]) {
 
 	calc_size(height, width, argv[6]);
 
+	if (strcmp(argv[7], "average") == 0 && argc > 7)
+		mode = 1;
+
 	orig = (u8_t *) malloc(buf_size);
 	eval = (u8_t *) malloc(buf_size);
+
+	if (!mode) {
 #ifdef DESC
-	fprintf(stdout, "Aver \t\t Y \t\t U \t\t V\n");
+		fprintf(stdout, "Aver \t\t Y \t\t U \t\t V\n");
 #endif
-	for (frames = 0; frames < abs(atoi(argv[5])); frames++) {
+	}
+
+	for (frame_num = 0; frame_num < abs(atoi(argv[5])); frame_num++) {
 		if (fread(orig, buf_size, 1, orig_file) <= 0) {
 			break;
 		}
@@ -139,30 +162,51 @@ int main(int argc, char* argv[]) {
 			break;
 		}
 
-		y = psnr(orig, eval, Y_size);
-		u = psnr(orig + Y_size, eval + Y_size, C_size);
-		v = psnr(orig + Y_size + C_size, eval + Y_size + C_size, C_size);
+		yuv_mse = mse(orig, eval, buf_size);
+
+		if (mode) // mode 0 -> per-frame || 1 -> average
+			mse_sum += yuv_mse;
+		else {
+
 #ifdef DESC
-		fprintf(stdout, "%.3f \t\t %.3f \t %.3f \t %.3f\n", (y + u + v) / 3, y, u, v);
+
+			y_mse = mse(orig, eval, Y_size);
+			u_mse = mse(orig + Y_size, eval + Y_size, C_size);
+			v_mse = mse(orig + Y_size + C_size, eval + Y_size + C_size, C_size);
+
+			mse_sum += yuv_mse;
+			y_avr += y_mse;
+			u_avr += u_mse;
+			v_avr += v_mse;
+
+			fprintf(stdout, "%.3f \t\t %.3f \t %.3f \t %.3f\n", psnr(yuv_mse), psnr(y_mse), psnr(u_mse), psnr(v_mse));
 #else
-		fprintf(stdout, "%.3f\n", (y+u+v)/3);
+			fprintf(stdout, "%.3f\n", psnr(yuv_mse));
 #endif
 
-                y_avr += y;
-		u_avr += u;
-		v_avr += v;
+		}
+	}
+
+	if (mode) {
+#ifdef DESC
+		fprintf(stdout, "Frame number: %d, MSE sum: %f\n", frame_num, mse_sum);
+
+		fprintf(stdout, "Average PSNR value: %f\n", psnr(mse_sum/frame_num));
+#else
+		fprintf(stdout, "%f\n", psnr(mse_sum / frame_num));
+#endif
+	} else {
+#ifdef DESC
+		fprintf(stdout, "\n\n \t\t===== END OF CALCULATIONS====\n\n ");
+
+		fprintf(stdout, "Total N# of frames calculated: %d \n", frame_num);
+		fprintf(stdout, "PSNR average values for all: %.4f Luma(Y): %.4f Blue-Luma(U): %.4f and Red-Luma(V): %.4f \n",
+				psnr(mse_sum/frame_num), psnr(y_avr / frame_num), psnr(u_avr / frame_num), psnr(v_avr / frame_num));
+#endif
 
 	}
-#ifdef DESC
-	fprintf(stdout, "\n\n \t\t===== END OF CALCULATIONS====\n\n ");
-
-	fprintf(stdout, "Total N# of frames calculated: %d \n", frames);
-	fprintf(stdout, "PSNR average values for all: %.4f Luma(Y): %.4f Blue-Luma(U): %.4f and Red-Luma(V): %.4f \n",
-					(y_avr+u_avr+v_avr)/3/(frames),y_avr / frames, u_avr / frames, v_avr / frames);
-#endif
 
 	close_f();
 	return 0;
 
 }
-
