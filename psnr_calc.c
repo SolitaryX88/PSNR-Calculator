@@ -56,8 +56,8 @@ int init_res(char* size) {
 		close_f();
 	}
 
-	if (im_size > 4100) {
-		fprintf(stderr, "Can't calculate YUV's over 4K! \n");
+	if (im_size > 16100) {
+		fprintf(stderr, "Can't calculate YUV's over 16K! \n");
 		close_f();
 	}
 
@@ -95,7 +95,8 @@ void calc_size(int height, int width, char* yuv_sub) {
 double mse(u8_t* orig_buff, u8_t* eval_buff, int size) {
 
 	double err = 0.0;
-	int i, diff;
+	unsigned long i;
+        int diff;
 
 	for (i = 0; i < size; i++) {
 		diff = (int) orig_buff[i] - eval_buff[i];
